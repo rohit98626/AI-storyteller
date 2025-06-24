@@ -49,3 +49,9 @@ Fine-Tuning: LoRA
 Language Model: GPT-2
 
 
+
+
+
+![Screenshot (840)](https://github.com/user-attachments/assets/908fa860-4982-42c6-9ad5-de6b52bb9f4e)
+
+
