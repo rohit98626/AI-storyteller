@@ -7,6 +7,8 @@ print("Loading base model + LoRA adapter...")
 base_model = AutoModelForCausalLM.from_pretrained("gpt2")
 model = PeftModel.from_pretrained(base_model, "lora_storyteller")
 
+model.eval()
+
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 tokenizer.pad_token = tokenizer.eos_token
 
@@ -14,17 +16,45 @@ print("Model ready for Storytelling")
 
 def generate_story(prompt):
     time.sleep(1) 
-    inputs = tokenizer(prompt, return_tensors="pt")
+    
+    if not prompt.strip():
+        formatted_prompt = "Once upon a time, in a magical world"
+    else:
+        prompt = prompt.strip()
+        if not prompt.lower().startswith(('once', 'in', 'the', 'a', 'an', 'there', 'when', 'as', 'while')):
+            formatted_prompt = f"Once upon a time, {prompt}"
+        else:
+            formatted_prompt = prompt
+    
+    if not formatted_prompt.lower().startswith('once upon a time'):
+        formatted_prompt = f"Once upon a time, {formatted_prompt}"
+    
+    inputs = tokenizer(formatted_prompt, return_tensors="pt")
+    
     output_ids = model.generate(
         **inputs,
-        max_length=500,
+        max_length=800, 
         do_sample=True,
-        top_p=0.9,
-        temperature=0.8,
-        repetition_penalty=1.2,
-        no_repeat_ngram_size=3
+        top_p=0.85,      
+        temperature=0.7,  
+        repetition_penalty=1.1,  
+        no_repeat_ngram_size=2,  
+        pad_token_id=tokenizer.eos_token_id,
+        eos_token_id=tokenizer.eos_token_id,
+        early_stopping=True,
+        num_return_sequences=1,
+        length_penalty=1.0,  
+        min_length=100       
     )
+    
     story = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+    
+    if story.startswith(formatted_prompt):
+        story = story[len(formatted_prompt):].strip()
+    
+    if not story.endswith(('.', '!', '?')):
+        story += '.'
+    
     return story
 
 with gr.Blocks(
